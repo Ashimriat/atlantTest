@@ -4,8 +4,13 @@ import { isInRange } from "../../utils";
 type IAxisMoveCoords = { newAxisCoord: number, newAxisMoveStartCoord: number };
 type IAxisResizeSizeAndCoords = { newAxisSize: number, newAxisCoord: number, newAxisMoveStartCoord: number };
 type IAxisElemCoordInResize = { [newAxisFixedSide: string]: string; }
+type ICompassDirection = 'N' | 'S' | 'W' | 'E';
+type IResizeCompassDirection = ICompassDirection | string;
+type IAXisCompassDirections = { default: ICompassDirection, alt: ICompassDirection };
+
 
 export default class MoveResizeService {
+  // @ts-ignore
   static #getAxisMoveNewCoords(
     elemAxisBorderCoord: number,
     elemAxisSize: number,
@@ -54,6 +59,7 @@ export default class MoveResizeService {
     }
   }
 
+  // @ts-ignore
   static #getAxisResizeNewSizeAndCoords(
     isChangeOnAxisAllowed: boolean,
     isResizingInStandardAxisDirection: boolean,
@@ -132,7 +138,7 @@ export default class MoveResizeService {
     };
   }
 
-
+  // @ts-ignore
   static #getInResizeElemAxisSideAndCoord(
     isChangeOnAxisAltSide: boolean,
     axisSides: { standard: string, alt: string },
@@ -171,5 +177,35 @@ export default class MoveResizeService {
       revertY, { standard: 'top', alt: 'bottom' }, elemY, elemHeight, parentHeight, infelicityY
     );
     return { ...horizontalCoord, ...verticalCoord };
+  }
+
+  // @ts-ignore
+  static #getAxisResizeType(
+    axisMouseCoord: number,
+    elemAxisCoord: number,
+    elemAxisSize: number,
+    parentAxisSize: number,
+    axisCompassDirections: IAXisCompassDirections
+  ): IResizeCompassDirection {
+    let res = '';
+    if (axisMouseCoord < 20 && elemAxisCoord) {
+      res = axisCompassDirections.alt;
+    } else if (isInRange(axisMouseCoord, elemAxisSize - 20, elemAxisSize) && (elemAxisCoord + elemAxisSize) < parentAxisSize) {
+      res = axisCompassDirections.default;
+    }
+    return res;
+  }
+
+  static getElemResizeType(mouseData, elemData, parentData) {
+    const { x: mouseX, y: mouseY } = mouseData;
+    const { left: elemLeft, top: elemTop, width: elemWidth, height: elemHeight } = elemData;
+    const { width: parentWidth, height: parentHeight } = parentData;
+    const xAxisChange = MoveResizeService.#getAxisResizeType(
+      mouseX, elemLeft, elemWidth, parentWidth, { default: 'E', alt: 'W' }
+    );
+    const yAxisChange = MoveResizeService.#getAxisResizeType(
+      mouseY, elemTop, elemHeight, parentHeight, { default: 'S', alt: 'N' }
+    );
+    return  xAxisChange + yAxisChange;
   }
 }

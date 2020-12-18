@@ -1,17 +1,16 @@
 <template lang="pug">
   .Tile(
     ref="tile"
-    :class="[cursorTypeClass, isEdited && 'Tile--unselectable']"
+    :class="[cursorTypeClass, isEdited && 'Tile--unselectable', `Tile--${tileIndex + 1}`]"
     :style="tileStyles"
     @mousedown.self="processMouseDown"
     @mousemove.self="processMouseMove"
   )
-    | {{ `Блок ${order}` }}
+    | {{ `Блок ${tileIndex + 1}` }}
 </template>
 
 <script lang="ts">
 import { Vue, Component, Prop, Ref } from 'vue-property-decorator';
-import { isInRange } from "../../../utils";
 import MoveResizeService from "../moveResizeService";
 
 
@@ -25,7 +24,6 @@ export default class Tile extends Vue {
   @Prop() readonly isDisplayed!: boolean;
   @Prop() readonly deskSizes!: { width: number, height: number };
   // @Prop({ default: { x: 0, y: 0 } }) readonly coords!: { x: number, y: number };
-  @Prop({ default: 0 }) readonly order!: number;
   @Prop() readonly isEdited!: boolean;
   @Prop() readonly tileIndex!: number;
   @Ref() readonly tile!;
@@ -50,19 +48,12 @@ export default class Tile extends Vue {
   }
 
   defineCursorType(xOffset: number, yOffset: number): string {
-    let xPoint = '',
-        yPoint = '';
-    if (xOffset < 20 && this.left) {
-      xPoint = 'W';
-    } else if (isInRange(xOffset, this.width - 20, this.width) && (this.left + this.width) < this.deskSizes.width) {
-      xPoint = 'E';
-    }
-    if (yOffset < 20 && this.top) {
-      yPoint = 'N';
-    } else if (isInRange(yOffset, this.height - 20, this.height) && (this.top + this.height) < this.deskSizes.height) {
-      yPoint = 'S';
-    }
-    const pointRes = yPoint + xPoint;
+    const { width, height, left, top, deskSizes } = this;
+    const pointRes = MoveResizeService.getElemResizeType(
+      { x: xOffset, y: yOffset },
+      { width, height, left, top },
+      deskSizes
+    );
     return pointRes || 'default';
   }
 
@@ -103,6 +94,16 @@ export default class Tile extends Vue {
     box-sizing: border-box
     max-width: 100%
     max-height: 100%
+    &--1
+      background-color: aquamarine
+    &--2
+      background-color: bisque
+    &--3
+      background-color: cadetblue
+    &--4
+      background-color: crimson
+    &--5
+      background-color: chocolate
     &--unselectable
       user-select: none
     &--move

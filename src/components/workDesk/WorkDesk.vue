@@ -19,6 +19,7 @@
         :tileIndex="index"
         @editing="setEditedTileData"
         @moving="moveTile"
+        @deleting="deleteTile"
       )
 </template>
 
@@ -28,7 +29,6 @@ import { namespace } from "vuex-class";
 import Tile from "./elements/Tile";
 import { ITile } from '../../bootstrap/store/modules/workDesk';
 import { MUTATIONS } from "../../bootstrap/store/actionsMutations";
-import { trackElementAppear } from "../../utils";
 import MoveResizeService from "./moveResizeService";
 
 
@@ -41,6 +41,8 @@ export default class WorkDesk extends Vue {
   @Ref() readonly workdesk!;
   @workDeskModule.State tiles!: ITile[];
   @workDeskModule.Mutation(MUTATIONS.WORKDESK.CHANGE_TILE_DATA) changeTileData!;
+  @workDeskModule.Mutation(MUTATIONS.WORKDESK.REMOVE_TILE) removeTile!;
+  @workDeskModule.Mutation(MUTATIONS.WORKDESK.GENERATE_TILE) generateTile!;
 
   editedTileIndex: number = -1;
   editedTile = null;
@@ -52,12 +54,12 @@ export default class WorkDesk extends Vue {
   };
   isRefMounted: boolean = false;
 
-  async mounted(): Promise<void> {
-    await trackElementAppear('.WorkDesk');
+  mounted(): void {
+    // Попытка вызвать getBoundingClientRect() на рефе до маунту приводит к ошибке
     this.isRefMounted = true;
   }
 
-  processMouseMove(e: MouseEvent) {
+  processMouseMove(e: MouseEvent): void {
     if (!this.editedTile) return;
     if (this.isResizing) {
       this.resizeTile(e);
@@ -66,10 +68,10 @@ export default class WorkDesk extends Vue {
     }
   }
 
-  saveData() {
+  saveData(): void {
     if (this.editedTile) {
       this.changeTileData({
-        index: this.editedTileIndex,
+        tileIndex: this.editedTileIndex,
         data: {
           width: this.editedTile.width,
           height: this.editedTile.height,
@@ -83,7 +85,10 @@ export default class WorkDesk extends Vue {
 
   setEditedTileData(index: number, moveStartCoords: { x: number, y: number }, widthChange?: string, heightChange?: string) {
     this.editedTileIndex = index;
-    this.editedTile = this.tiles[index];
+    this.editedTile = {
+      ...this.tiles[index],
+      zIndex: 6
+    };
     this.editingData = {
       moveStartX: moveStartCoords.x,
       moveStartY: moveStartCoords.y,
@@ -92,7 +97,7 @@ export default class WorkDesk extends Vue {
     };
   }
 
-  resizeTile({ clientX, clientY }: Partial<MouseEvent>) {
+  resizeTile({ clientX, clientY }: Partial<MouseEvent>): void {
     const { changeWidth, changeHeight } = this.editingData;
     const { offsetLeft: deskOffsetLeft, offsetTop: deskOffsetTop } = (this.$refs.workdesk as HTMLElement);
     const {
@@ -109,10 +114,9 @@ export default class WorkDesk extends Vue {
     );
     this.editedTile = { ...this.editedTile, width, left, height, top };
     this.editingData = { ...this.editingData, moveStartX, moveStartY };
-    this.rearrangeLayers();
   }
 
-  moveTile({ clientX, clientY }: Partial<MouseEvent>) {
+  moveTile({ clientX, clientY }: Partial<MouseEvent>): void {
     const { offsetLeft: deskOffsetLeft, offsetTop: deskOffsetTop } = (this.$refs.workdesk as HTMLElement);
     const {
       newCoords: { left, top },
@@ -125,14 +129,13 @@ export default class WorkDesk extends Vue {
     );
     this.editedTile = { ...this.editedTile, left, top };
     this.editingData = { ...this.editingData, moveStartX, moveStartY };
-    this.rearrangeLayers();
   }
 
-  rearrangeLayers() {
-    // TODO: учесть изменение zIndex при ресайзе и движении на другие тайлы
+  deleteTile(tileIndex: number): void {
+    this.removeTile(tileIndex);
   }
 
-  resetEditingData() {
+  resetEditingData(): void {
     this.editedTileIndex = -1;
     this.editedTile = null;
     this.editingData = {
@@ -147,7 +150,7 @@ export default class WorkDesk extends Vue {
     return !!this.editingData.changeWidth || !!this.editingData.changeHeight;
   }
 
-  get deskSizes() {
+  get deskSizes(): { width: number, height: number } {
     if (!this.isRefMounted) {
       return { width: 0, height: 0 };
     }
