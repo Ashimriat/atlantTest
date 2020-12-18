@@ -6,7 +6,7 @@
       @mouseleave="saveData"
     )
       Tile(
-        v-for="({ width, height, top, left, zIndex, isDisplayed }, index) in tiles"
+        v-for="({ width, height, top, left, zIndex }, index) in tiles"
         :key="index"
         :width="index === editedTileIndex ? editedTile.width : width"
         :height="index === editedTileIndex ? editedTile.height : height"
@@ -14,7 +14,6 @@
         :left="index === editedTileIndex ? editedTile.left : left"
         :deskSizes="deskSizes"
         :zIndex="index === editedTileIndex ? editedTile.zIndex : zIndex"
-        :isDisplayed="isDisplayed"
         :isEdited="editedTileIndex === index"
         :tileIndex="index"
         @editing="setEditedTileData"
@@ -27,7 +26,7 @@
 import { Vue, Component, Ref } from "vue-property-decorator";
 import { namespace } from "vuex-class";
 import Tile from "./elements/Tile";
-import { ITile } from '../../bootstrap/store/modules/workDesk';
+import { ICoords, ISizes, ICoordsAndSizes, ITile } from "../../interfaces/iWorkDesk";
 import { MUTATIONS } from "../../bootstrap/store/actionsMutations";
 import MoveResizeService from "./moveResizeService";
 
@@ -38,14 +37,14 @@ const workDeskModule = namespace('workDesk');
   components: { Tile }
 })
 export default class WorkDesk extends Vue {
-  @Ref() readonly workdesk!;
+  @Ref() readonly workdesk!: HTMLElement;
   @workDeskModule.State tiles!: ITile[];
-  @workDeskModule.Mutation(MUTATIONS.WORKDESK.CHANGE_TILE_DATA) changeTileData!;
-  @workDeskModule.Mutation(MUTATIONS.WORKDESK.REMOVE_TILE) removeTile!;
-  @workDeskModule.Mutation(MUTATIONS.WORKDESK.GENERATE_TILE) generateTile!;
+  @workDeskModule.Mutation(MUTATIONS.WORKDESK.CHANGE_TILE) changeTile!: Function;
+  @workDeskModule.Mutation(MUTATIONS.WORKDESK.REMOVE_TILE) removeTile!: Function;
+  @workDeskModule.Mutation(MUTATIONS.WORKDESK.GENERATE_TILE) generateTile!: Function;
 
   editedTileIndex: number = -1;
-  editedTile = null;
+  editedTile: null | ITile = null;
   editingData = {
     moveStartX: 0,
     moveStartY: 0,
@@ -70,20 +69,16 @@ export default class WorkDesk extends Vue {
 
   saveData(): void {
     if (this.editedTile) {
-      this.changeTileData({
+      const { width, height, top, left } = this.editedTile;
+      this.changeTile({
         tileIndex: this.editedTileIndex,
-        data: {
-          width: this.editedTile.width,
-          height: this.editedTile.height,
-          top: this.editedTile.top,
-          left: this.editedTile.left
-        }
+        data: { width, height, top, left }
       });
     }
     this.resetEditingData();
   }
 
-  setEditedTileData(index: number, moveStartCoords: { x: number, y: number }, widthChange?: string, heightChange?: string) {
+  setEditedTileData(index: number, moveStartCoords: ICoords, widthChange?: string, heightChange?: string): void {
     this.editedTileIndex = index;
     this.editedTile = {
       ...this.tiles[index],
@@ -97,37 +92,37 @@ export default class WorkDesk extends Vue {
     };
   }
 
-  resizeTile({ clientX, clientY }: Partial<MouseEvent>): void {
+  resizeTile({ clientX, clientY }: MouseEvent): void {
     const { changeWidth, changeHeight } = this.editingData;
-    const { offsetLeft: deskOffsetLeft, offsetTop: deskOffsetTop } = (this.$refs.workdesk as HTMLElement);
+    const { offsetLeft: deskOffsetLeft, offsetTop: deskOffsetTop } = this.workdesk;
     const {
-      newCoords: { left, top },
+      newCoords: { x: left, y: top },
       newSizes: { width, height },
-      newMoveStartCoords: { moveStartX, moveStartY }
+      newMoveStartCoords: { x: moveStartX, y: moveStartY }
     } = MoveResizeService.getResizeNewSizesAndCoords(
       { x: !!changeWidth, y: !!changeHeight, standardX: changeWidth === 'E', standardY: changeHeight === 'S' },
       { width: 300, height: 100 },
-      this.editedTile,
+      this.editedTile as ICoordsAndSizes,
       { ...this.deskSizes, left: deskOffsetLeft, top: deskOffsetTop },
       { x: clientX as number, y: clientY as number},
       { x: this.editingData.moveStartX, y: this.editingData.moveStartY }
     );
-    this.editedTile = { ...this.editedTile, width, left, height, top };
+    this.editedTile = { ...this.editedTile as ITile, width, left, height, top };
     this.editingData = { ...this.editingData, moveStartX, moveStartY };
   }
 
-  moveTile({ clientX, clientY }: Partial<MouseEvent>): void {
-    const { offsetLeft: deskOffsetLeft, offsetTop: deskOffsetTop } = (this.$refs.workdesk as HTMLElement);
+  moveTile({ clientX, clientY }: MouseEvent): void {
+    const { offsetLeft: deskOffsetLeft, offsetTop: deskOffsetTop } = this.workdesk;
     const {
-      newCoords: { left, top },
-      newMoveStartCoords: { moveStartX, moveStartY }
+      newCoords: { x: left, y: top },
+      newMoveStartCoords: { x: moveStartX, y: moveStartY }
     } = MoveResizeService.getMoveNewCoords(
-      this.editedTile,
+      this.editedTile as ICoordsAndSizes,
       { ...this.deskSizes, left: deskOffsetLeft, top: deskOffsetTop },
       { x: clientX as number, y: clientY as number},
       { x: this.editingData.moveStartX, y: this.editingData.moveStartY }
     );
-    this.editedTile = { ...this.editedTile, left, top };
+    this.editedTile = { ...this.editedTile as ITile, left, top };
     this.editingData = { ...this.editingData, moveStartX, moveStartY };
   }
 
@@ -150,11 +145,11 @@ export default class WorkDesk extends Vue {
     return !!this.editingData.changeWidth || !!this.editingData.changeHeight;
   }
 
-  get deskSizes(): { width: number, height: number } {
+  get deskSizes(): ISizes {
     if (!this.isRefMounted) {
       return { width: 0, height: 0 };
     }
-    const { width, height } = (this.$refs.workdesk as Element).getBoundingClientRect();
+    const { width, height } = this.workdesk.getBoundingClientRect();
     return { width, height };
   }
 }

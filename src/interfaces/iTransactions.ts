@@ -8,7 +8,7 @@ interface IOperationData {
   script: string;
 }
 
-export interface ITransactionData {
+export interface ITransactionFullData {
   op: string;
   x: {
     lock_time: number;

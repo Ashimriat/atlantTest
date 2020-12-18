@@ -1,12 +1,11 @@
 import { isInRange } from "../../utils";
-
-
-type IAxisMoveCoords = { newAxisCoord: number, newAxisMoveStartCoord: number };
-type IAxisResizeSizeAndCoords = { newAxisSize: number, newAxisCoord: number, newAxisMoveStartCoord: number };
-type IAxisElemCoordInResize = { [newAxisFixedSide: string]: string; }
-type ICompassDirection = 'N' | 'S' | 'W' | 'E';
-type IResizeCompassDirection = ICompassDirection | string;
-type IAXisCompassDirections = { default: ICompassDirection, alt: ICompassDirection };
+import CONFIG from "../../config";
+import {
+  IAxisMoveData, IMoveData, IAxisResizeData, IResizeData,
+  IResizeElemCoordsStyles, IAxisCompassDirection, IResizeDirection,
+  ICoords, ISizes, ICoordsAndSizes, IAxisesResizeData, IAxisDirections,
+  IAxisDirectionsSettings
+} from "../../interfaces/iWorkDesk";
 
 
 export default class MoveResizeService {
@@ -18,25 +17,30 @@ export default class MoveResizeService {
     parentAxisSize: number,
     axisMouseCoord: number,
     axisMoveStartCoord: number
-  ): IAxisMoveCoords {
+  ): IAxisMoveData {
     const res = { newAxisCoord: elemAxisBorderCoord, newAxisMoveStartCoord: axisMoveStartCoord };
     const moveCoordChange = axisMouseCoord - axisMoveStartCoord;
-    const factCoordChange = Math.sign(moveCoordChange) * 10;
+    const factCoordChange = Math.sign(moveCoordChange) * CONFIG.GRID_SIZE;
     const isNotOutOfAxisParentBorders = isInRange(
       elemAxisBorderCoord + factCoordChange + parentAxisBorderCoord,
       parentAxisBorderCoord,
       parentAxisBorderCoord + parentAxisSize - elemAxisSize
     );
-    if (Math.abs(moveCoordChange) >= 10 && isNotOutOfAxisParentBorders) {
+    if (Math.abs(moveCoordChange) >= CONFIG.GRID_SIZE && isNotOutOfAxisParentBorders) {
       res.newAxisCoord += factCoordChange;
       res.newAxisMoveStartCoord += factCoordChange;
     }
     return res;
   };
 
-  static getMoveNewCoords(elemData, parentData, mouseCoords, moveStartCoords) {
-    const { top: elemY, left: elemX, width: elemWidth, height: elemHeight } = elemData;
-    const { top: parentY, left: parentX, width: parentWidth, height: parentHeight } = parentData;
+  static getMoveNewCoords(
+    elemData: ICoordsAndSizes,
+    parentData: ICoordsAndSizes,
+    mouseCoords: ICoords,
+    moveStartCoords: ICoords
+  ): IMoveData {
+    const { left: elemX, top: elemY, width: elemWidth, height: elemHeight } = elemData;
+    const { left: parentX, top: parentY, width: parentWidth, height: parentHeight } = parentData;
     const { x: mouseX, y: mouseY } = mouseCoords;
     const { x: startX, y: startY } = moveStartCoords;
     const {
@@ -49,12 +53,12 @@ export default class MoveResizeService {
     } = MoveResizeService.#getAxisMoveNewCoords(elemY, elemHeight, parentY, parentHeight, mouseY, startY);
     return {
       newCoords: {
-        left: newLeft,
-        top: newTop
+        x: newLeft,
+        y: newTop
       },
       newMoveStartCoords: {
-        moveStartX: newMoveStartX,
-        moveStartY: newMoveStartY
+        x: newMoveStartX,
+        y: newMoveStartY
       }
     }
   }
@@ -70,11 +74,9 @@ export default class MoveResizeService {
     elemAxisCoord: number,
     parentAxisBorderCoord: number,
     parensAxisSize: number
-  ): IAxisResizeSizeAndCoords {
+  ): IAxisResizeData {
     const res = { newAxisSize: elemAxisSize, newAxisCoord: elemAxisCoord, newAxisMoveStartCoord: axisMoveStartCoord };
-    if (!isChangeOnAxisAllowed) {
-      return res;
-    }
+    if (!isChangeOnAxisAllowed) return res;
     const multiplier = isResizingInStandardAxisDirection ? 1 : -1;
     const moveSizeChange = (axisMouseCoord - axisMoveStartCoord) * multiplier;
     const factSizeChange = Math.sign(moveSizeChange) * 10;
@@ -93,17 +95,18 @@ export default class MoveResizeService {
   }
 
   static getResizeNewSizesAndCoords(
-    axisesData,
-    minSizes,
-    elemData,
-    parentData,
-    mouseCoords,
-    moveStartCoords
-  ) {
+    axisesData: IAxisesResizeData,
+    minSizes: ISizes,
+    elemData: ICoordsAndSizes,
+    parentData: ICoordsAndSizes,
+    mouseCoords: ICoords,
+    moveStartCoords: ICoords
+  ): IResizeData {
     const { x: allowResizeX, y: allowResizeY, standardX, standardY } = axisesData;
+    console.log("STANDARD X: ", standardX);
     const { width: minWidth, height: minHeight } = minSizes;
-    const { top: elemTop, left: elemLeft, width: elemWidth, height: elemHeight } = elemData;
-    const { width: parentWidth, height: parentHeight, left: parentLeft, top: parentTop } = parentData;
+    const { top: elemY, left: elemX, width: elemWidth, height: elemHeight } = elemData;
+    const { width: parentWidth, height: parentHeight, left: parentX, top: parentY } = parentData;
     const { x: mouseX, y: mouseY } = mouseCoords;
     const { x: moveStartX, y: moveStartY } = moveStartCoords;
     const {
@@ -111,8 +114,8 @@ export default class MoveResizeService {
       newAxisCoord: newLeft,
       newAxisMoveStartCoord: newMoveStartX
     } = MoveResizeService.#getAxisResizeNewSizeAndCoords(
-      !!allowResizeX, standardX, minWidth, mouseX,
-      moveStartX, elemWidth, elemLeft, parentLeft, parentWidth
+      allowResizeX, standardX, minWidth, mouseX,
+      moveStartX, elemWidth, elemX, parentX, parentWidth
     );
     const {
       newAxisSize: newHeight,
@@ -120,7 +123,7 @@ export default class MoveResizeService {
       newAxisMoveStartCoord: newMoveStartY
     } = MoveResizeService.#getAxisResizeNewSizeAndCoords(
       allowResizeY, standardY, minHeight, mouseY,
-      moveStartY, elemHeight, elemTop, parentTop, parentHeight
+      moveStartY, elemHeight, elemY, parentY, parentHeight
     );
     return {
       newSizes: {
@@ -128,12 +131,12 @@ export default class MoveResizeService {
         height: newHeight,
       },
       newCoords: {
-        top: newTop,
-        left: newLeft,
+        x: newLeft,
+        y: newTop,
       },
       newMoveStartCoords: {
-        moveStartX: newMoveStartX,
-        moveStartY: newMoveStartY
+        x: newMoveStartX,
+        y: newMoveStartY
       }
     };
   }
@@ -141,12 +144,12 @@ export default class MoveResizeService {
   // @ts-ignore
   static #getInResizeElemAxisSideAndCoord(
     isChangeOnAxisAltSide: boolean,
-    axisSides: { standard: string, alt: string },
+    axisSides: { standard: IAxisDirections, alt: IAxisDirections },
     elemAxisCoord: number,
     elemAxisSize: number,
     parentAxisSize: number,
     borderInfelicity: number
-  ): IAxisElemCoordInResize {
+  ): IResizeElemCoordsStyles {
     let newAxisFixedSide = axisSides.standard;
     let newAxisCoord = elemAxisCoord - borderInfelicity;
     if (newAxisCoord < 0) newAxisCoord = 0;
@@ -161,11 +164,11 @@ export default class MoveResizeService {
   }
 
   static getInResizeElemCoords(
-    axisesData,
-    elemData,
-    parentData,
-    infelicities
-  ) {
+    axisesData: { x: boolean, y: boolean },
+    elemData: ICoordsAndSizes,
+    parentData: ISizes,
+    infelicities: { x: number, y: number }
+  ): IResizeElemCoordsStyles {
     const { x: revertX, y: revertY } = axisesData;
     const { width: elemWidth, height: elemHeight, top: elemY, left: elemX } = elemData;
     const { width: parentWidth, height: parentHeight } = parentData;
@@ -180,32 +183,65 @@ export default class MoveResizeService {
   }
 
   // @ts-ignore
-  static #getAxisResizeType(
-    axisMouseCoord: number,
+  static #getAxisResizeDirectionAndCursorType(
+    axisMouseCoord: number, // координаты указателя мыши относительно верхней и левой границ элемента
     elemAxisCoord: number,
     elemAxisSize: number,
     parentAxisSize: number,
-    axisCompassDirections: IAXisCompassDirections
-  ): IResizeCompassDirection {
-    let res = '';
-    if (axisMouseCoord < 20 && elemAxisCoord) {
-      res = axisCompassDirections.alt;
-    } else if (isInRange(axisMouseCoord, elemAxisSize - 20, elemAxisSize) && (elemAxisCoord + elemAxisSize) < parentAxisSize) {
-      res = axisCompassDirections.default;
+    axisCompassDirections: IAxisDirectionsSettings,
+    elemMinAxisSize: number
+  ): IAxisCompassDirection {
+    let resizeDirection: string = '',
+        isResizableInBothSides: boolean = false;
+    const isNotMinAxisSizeElem = elemAxisSize > elemMinAxisSize;
+    if (axisMouseCoord < CONFIG.RESIZE_INDENT) {
+      resizeDirection = 'alt';
+      if (!elemAxisCoord) {
+        resizeDirection = isNotMinAxisSizeElem ? 'default' : '';
+      } else {
+        isResizableInBothSides = isNotMinAxisSizeElem;
+      }
+    } else if (isInRange(axisMouseCoord, elemAxisSize - 20, elemAxisSize)) {
+      // справа/снизу, направление по ходу оси
+      resizeDirection = 'default';
+      if ((elemAxisCoord + elemAxisSize) === parentAxisSize) {
+        resizeDirection = isNotMinAxisSizeElem ? 'alt' : '';
+      } else {
+        isResizableInBothSides = isNotMinAxisSizeElem;
+      }
     }
-    return res;
+    return {
+      resizeDirection: axisCompassDirections[resizeDirection as keyof IAxisDirectionsSettings] || '',
+      isResizableInBothSides
+    };
   }
 
-  static getElemResizeType(mouseData, elemData, parentData) {
+  static getElemResizeDirectionAndCursorType(
+    mouseData: ICoords,
+    elemData: ICoordsAndSizes,
+    parentData: ISizes
+  ): IResizeDirection {
     const { x: mouseX, y: mouseY } = mouseData;
-    const { left: elemLeft, top: elemTop, width: elemWidth, height: elemHeight } = elemData;
+    const { left: elemX, top: elemY, width: elemWidth, height: elemHeight } = elemData;
     const { width: parentWidth, height: parentHeight } = parentData;
-    const xAxisChange = MoveResizeService.#getAxisResizeType(
-      mouseX, elemLeft, elemWidth, parentWidth, { default: 'E', alt: 'W' }
+    const {
+      resizeDirection: xResizeDirection,
+      isResizableInBothSides: xResizableInBothSides
+    } = MoveResizeService.#getAxisResizeDirectionAndCursorType(
+      mouseX, elemX, elemWidth, parentWidth, { default: 'E', alt: 'W' }, CONFIG.MIN_TILE_SIZES.width
     );
-    const yAxisChange = MoveResizeService.#getAxisResizeType(
-      mouseY, elemTop, elemHeight, parentHeight, { default: 'S', alt: 'N' }
+    const {
+      resizeDirection: yResizeDirection,
+      isResizableInBothSides: yResizableInBothSides
+    } = MoveResizeService.#getAxisResizeDirectionAndCursorType(
+      mouseY, elemY, elemHeight, parentHeight, { default: 'S', alt: 'N' }, CONFIG.MIN_TILE_SIZES.height
     );
-    return  xAxisChange + yAxisChange;
+    return {
+      resizeDirection: yResizeDirection + xResizeDirection,
+      isResizableInBothSides: {
+        x: xResizableInBothSides,
+        y: yResizableInBothSides
+      }
+    };
   }
 }

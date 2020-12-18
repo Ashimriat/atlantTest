@@ -1,21 +1,9 @@
 import { MUTATIONS } from "../actionsMutations";
+import CONFIG from "../../../config";
+import { IWorkDeskState, IChangeTileMutationData } from "../../../interfaces/iWorkDesk";
 
 
-export interface ITile {
-  width: number;
-  height: number;
-  top: number;
-  left: number;
-  zIndex: number;
-  isDisplayed: boolean;
-}
-
-
-export interface IWorkDeskState {
-  tiles: ITile[];
-}
-
-const { CHANGE_TILE_DATA, GENERATE_TILE, REMOVE_TILE } = MUTATIONS.WORKDESK;
+const { CHANGE_TILE, GENERATE_TILE, REMOVE_TILE } = MUTATIONS.WORKDESK;
 
 export default {
   namespaced: true,
@@ -27,7 +15,6 @@ export default {
         top: 300,
         left: 300,
         zIndex: 1,
-        isDisplayed: true,
       },
       {
         width: 300,
@@ -35,7 +22,6 @@ export default {
         top: 200,
         left: 400,
         zIndex: 2,
-        isDisplayed: true,
       },
       {
         width: 300,
@@ -43,7 +29,6 @@ export default {
         top: 0,
         left: 50,
         zIndex: 3,
-        isDisplayed: true,
       },
       {
         width: 300,
@@ -51,7 +36,6 @@ export default {
         top: 200,
         left: 0,
         zIndex: 4,
-        isDisplayed: true,
       },
       {
         width: 300,
@@ -59,12 +43,11 @@ export default {
         top: 0,
         left: 0,
         zIndex: 5,
-        isDisplayed: true,
       }
     ],
   }),
   mutations: {
-    [CHANGE_TILE_DATA](state: IWorkDeskState, { tileIndex, data }) {
+    [CHANGE_TILE](state: IWorkDeskState, { tileIndex, data }: IChangeTileMutationData): void {
       const { tiles } = state;
       const zIndexes = tiles.map(({ zIndex }) => zIndex);
       const editedTile = {
@@ -79,10 +62,10 @@ export default {
           : tileData.zIndex
       }) : editedTile);
     },
-    [GENERATE_TILE](state, tileOnTopIndex) {
+    [GENERATE_TILE](state: IWorkDeskState): void {
 
     },
-    [REMOVE_TILE](state, tileIndex) {
+    [REMOVE_TILE](state: IWorkDeskState, tileIndex: number): void {
 
     }
   },
