@@ -10,29 +10,31 @@ module.exports = (env, args) => {
 	const config = {
 		mode: args.mode,
 		entry: {
-			//main: path.resolve(__dirname, 'src/bootstrap'),
-		//},
 			main: {
 				import: path.resolve(__dirname, 'src/bootstrap'),
+				dependOn: 'common'
 			},
-		},
-		output: {
-			path: path.resolve(__dirname, 'dist'),
-			filename: '[name].js',
-			chunkFilename: '[name].chunk.js',
-			publicPath: path.resolve(__dirname, 'dist')
+			common: [
+				path.resolve(__dirname, 'src/config'), path.resolve(__dirname, 'src/constants'),
+				path.resolve(__dirname, 'src/utils'), path.resolve(__dirname, 'src/bootstrap/store/actionsMutations'),
+			]
 		},
 		optimization: {
-			// runtimeChunk: 'single',
+			minimize: !IS_DEV,
+			runtimeChunk: 'single',
 			splitChunks: {
-				chunks: 'all'
-			}
+				cacheGroups: {
+					vendors: {
+						test: /[\\/]node_modules[\\/]/,
+						name: 'vendors',
+					},
+				}
+			},
+			removeEmptyChunks: true,
+			mergeDuplicateChunks: true,
+			flagIncludedChunks: !IS_DEV
 		},
 		resolve: {
-			alias: {
-				elements: path.resolve(__dirname, 'src/components/elements'),
-				components: path.resolve(__dirname, 'src/components'),
-			},
 			extensions: ['.vue', '.ts', '.js']
 		},
 		module: {
@@ -59,6 +61,7 @@ module.exports = (env, args) => {
 				},
 				{
 					test: /\.s([ca])ss$/,
+					exclude: /node_modules/,
 					use: [
 						'vue-style-loader',
 						'style-loader',

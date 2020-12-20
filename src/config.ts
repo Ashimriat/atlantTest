@@ -18,6 +18,7 @@ export default {
       top: 300,
       left: 300,
       zIndex: 1,
+      order: 1,
     },
     {
       width: 300,
@@ -25,6 +26,7 @@ export default {
       top: 200,
       left: 400,
       zIndex: 2,
+      order: 2,
     },
     {
       width: 300,
@@ -32,6 +34,7 @@ export default {
       top: 0,
       left: 50,
       zIndex: 3,
+      order: 3,
     },
     {
       width: 300,
@@ -39,6 +42,7 @@ export default {
       top: 200,
       left: 0,
       zIndex: 4,
+      order: 4,
     },
     {
       width: 300,
@@ -46,6 +50,7 @@ export default {
       top: 0,
       left: 0,
       zIndex: 5,
+      order: 5,
     }
   ]
 };

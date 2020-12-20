@@ -2,8 +2,6 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import { ROUTES } from "../constants";
 import store from "./store";
-import transactions from "./store/modules/transactions";
-import workDesk from "./store/modules/workDesk";
 
 
 Vue.use(VueRouter);
@@ -14,12 +12,12 @@ const routes = [
     name: ROUTES.WORKDESK.path,
     component: async () => {
       const { default: workdeskStoreModule } = await import(
-        /* webpackChunkName: 'workdesk'*/
+        /* webpackChunkName: 'workDesk'*/
         './store/modules/workdesk'
       );
       store.registerModule(['workDesk'], workdeskStoreModule);
       return import(
-        /* webpackChunkName: 'workdesk' */
+        /* webpackChunkName: 'workDesk' */
         '../components/workDesk/WorkDesk'
       );
     }

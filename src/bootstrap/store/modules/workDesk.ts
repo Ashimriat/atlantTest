@@ -19,7 +19,8 @@ interface IActionContext {
 export default {
   namespaced: true,
   state: (): IWorkDeskState => {
-    let tiles = JSON.parse(localStorage.getItem(CONFIG.TILES_STORAGE_KEY) || '');
+    const storageData = localStorage.getItem(CONFIG.TILES_STORAGE_KEY);
+    let tiles = storageData ? JSON.parse(storageData) : null;
     if (!tiles) {
       tiles = CONFIG.START_TILES;
     }
