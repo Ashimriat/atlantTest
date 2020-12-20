@@ -1,29 +1,32 @@
 const path = require('path');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { BundleStatsWebpackPlugin } = require('bundle-stats-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 
 module.exports = (env, args) => {
 	const IS_DEV = args.mode === 'development';
-	const envCssLoader = IS_DEV ?
-		'style-loader' :
-		{
-			loader: MiniCssExtractPlugin.loader,
-			options: {
-				esModule: false,
-				modules: {
-					namedExport: false,
-				}
-			}
-		};
 	
 	const config = {
 		mode: args.mode,
 		entry: {
-			main: path.resolve(__dirname, 'src/bootstrap')
+			//main: path.resolve(__dirname, 'src/bootstrap'),
+		//},
+			main: {
+				import: path.resolve(__dirname, 'src/bootstrap'),
+			},
+		},
+		output: {
+			path: path.resolve(__dirname, 'dist'),
+			filename: '[name].js',
+			chunkFilename: '[name].chunk.js',
+			publicPath: path.resolve(__dirname, 'dist')
+		},
+		optimization: {
+			// runtimeChunk: 'single',
+			splitChunks: {
+				chunks: 'all'
+			}
 		},
 		resolve: {
 			alias: {
@@ -58,7 +61,7 @@ module.exports = (env, args) => {
 					test: /\.s([ca])ss$/,
 					use: [
 						'vue-style-loader',
-						envCssLoader,
+						'style-loader',
 						'css-loader',
 						{
 							loader: 'sass-loader',
@@ -76,13 +79,12 @@ module.exports = (env, args) => {
 		},
 		plugins: [
 			new VueLoaderPlugin(),
-			// new HtmlWebpackPlugin(), TODO: вместо нижнего
 			new CopyWebpackPlugin({
 				patterns: [{
 					from: 'src/index.html'
 				}]
 			})
-		]
+		],
 	};
 	
 	if (IS_DEV) {

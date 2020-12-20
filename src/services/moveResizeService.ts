@@ -1,11 +1,11 @@
-import { isInRange } from "../../utils";
-import CONFIG from "../../config";
+import { isInRange } from "../utils";
+import CONFIG from "../config";
 import {
   IAxisMoveData, IMoveData, IAxisResizeData, IResizeData,
   IResizeElemCoordsStyles, IAxisCompassDirection, IResizeDirection,
   ICoords, ISizes, ICoordsAndSizes, IAxisesResizeData, IAxisDirections,
   IAxisDirectionsSettings
-} from "../../interfaces/iWorkDesk";
+} from "../interfaces/iWorkDesk";
 
 
 export default class MoveResizeService {
@@ -66,7 +66,7 @@ export default class MoveResizeService {
   // @ts-ignore
   static #getAxisResizeNewSizeAndCoords(
     isChangeOnAxisAllowed: boolean,
-    isResizingInStandardAxisDirection: boolean,
+    isResizingElemFarAxisSide: boolean,
     minAxisSize: number,
     axisMouseCoord: number,
     axisMoveStartCoord: number,
@@ -77,13 +77,15 @@ export default class MoveResizeService {
   ): IAxisResizeData {
     const res = { newAxisSize: elemAxisSize, newAxisCoord: elemAxisCoord, newAxisMoveStartCoord: axisMoveStartCoord };
     if (!isChangeOnAxisAllowed) return res;
-    const multiplier = isResizingInStandardAxisDirection ? 1 : -1;
-    const moveSizeChange = (axisMouseCoord - axisMoveStartCoord) * multiplier;
-    const factSizeChange = Math.sign(moveSizeChange) * 10;
-    const newAxisSize = elemAxisSize + factSizeChange;
-    const isChangingSize = Math.abs(moveSizeChange) >= 10 && newAxisSize >= minAxisSize;
-    const newAxisCoord = isResizingInStandardAxisDirection ? elemAxisCoord : elemAxisCoord - factSizeChange;
-    const isOutOfParentAxisBorders = isResizingInStandardAxisDirection ?
+    const mouseCoordChange = axisMouseCoord - axisMoveStartCoord;
+    const mouseMoveDirectionMultiplier = Math.sign(mouseCoordChange);
+    const elemSideMultiplier = isResizingElemFarAxisSide ? 1 : -1;
+    const sizeChange = CONFIG.GRID_SIZE * mouseMoveDirectionMultiplier * elemSideMultiplier;
+    const coordChange = isResizingElemFarAxisSide ? 0 : -sizeChange;
+    const newAxisSize = elemAxisSize + sizeChange;
+    const newAxisCoord = elemAxisCoord + coordChange;
+    const isChangingSize = Math.abs(mouseCoordChange) >= CONFIG.GRID_SIZE && newAxisSize >= minAxisSize;
+    const isOutOfParentAxisBorders = isResizingElemFarAxisSide ?
       (parentAxisBorderCoord + newAxisCoord + newAxisSize) > (parentAxisBorderCoord + parensAxisSize) :
       newAxisCoord < 0;
     if (isChangingSize && !isOutOfParentAxisBorders) {
@@ -102,8 +104,7 @@ export default class MoveResizeService {
     mouseCoords: ICoords,
     moveStartCoords: ICoords
   ): IResizeData {
-    const { x: allowResizeX, y: allowResizeY, standardX, standardY } = axisesData;
-    console.log("STANDARD X: ", standardX);
+    const { x: allowResizeX, y: allowResizeY, farSideX, farSideY } = axisesData;
     const { width: minWidth, height: minHeight } = minSizes;
     const { top: elemY, left: elemX, width: elemWidth, height: elemHeight } = elemData;
     const { width: parentWidth, height: parentHeight, left: parentX, top: parentY } = parentData;
@@ -114,7 +115,7 @@ export default class MoveResizeService {
       newAxisCoord: newLeft,
       newAxisMoveStartCoord: newMoveStartX
     } = MoveResizeService.#getAxisResizeNewSizeAndCoords(
-      allowResizeX, standardX, minWidth, mouseX,
+      allowResizeX, farSideX, minWidth, mouseX,
       moveStartX, elemWidth, elemX, parentX, parentWidth
     );
     const {
@@ -122,7 +123,7 @@ export default class MoveResizeService {
       newAxisCoord: newTop,
       newAxisMoveStartCoord: newMoveStartY
     } = MoveResizeService.#getAxisResizeNewSizeAndCoords(
-      allowResizeY, standardY, minHeight, mouseY,
+      allowResizeY, farSideY, minHeight, mouseY,
       moveStartY, elemHeight, elemY, parentY, parentHeight
     );
     return {
@@ -153,7 +154,7 @@ export default class MoveResizeService {
     let newAxisFixedSide = axisSides.standard;
     let newAxisCoord = elemAxisCoord - borderInfelicity;
     if (newAxisCoord < 0) newAxisCoord = 0;
-    if (isChangeOnAxisAltSide) {
+    if (isChangeOnAxisAltSide || !elemAxisSize) {
       newAxisFixedSide = axisSides.alt;
       newAxisCoord = parentAxisSize - elemAxisCoord - elemAxisSize - borderInfelicity;
       if (newAxisCoord < 0) {
@@ -183,65 +184,71 @@ export default class MoveResizeService {
   }
 
   // @ts-ignore
-  static #getAxisResizeDirectionAndCursorType(
-    axisMouseCoord: number, // координаты указателя мыши относительно верхней и левой границ элемента
+  static #getAxisResizedSideAndCursorType(
+    inElemAxisMouseCoord: number, // координаты указателя мыши относительно левой границы элемента
     elemAxisCoord: number,
     elemAxisSize: number,
     parentAxisSize: number,
-    axisCompassDirections: IAxisDirectionsSettings,
+    axisDirectionsSettings: IAxisDirectionsSettings,
     elemMinAxisSize: number
   ): IAxisCompassDirection {
-    let resizeDirection: string = '',
-        isResizableInBothSides: boolean = false;
-    const isNotMinAxisSizeElem = elemAxisSize > elemMinAxisSize;
-    if (axisMouseCoord < CONFIG.RESIZE_INDENT) {
-      resizeDirection = 'alt';
+    const { defaultDir, altDir, switchDoubleCursorSides } = axisDirectionsSettings;
+    let elemAxisSideWithCursor: string = '',
+        cursorType: string = switchDoubleCursorSides ? defaultDir + altDir : altDir + defaultDir;
+    const isMinAxisSizeElem = elemAxisSize === elemMinAxisSize;
+    if (inElemAxisMouseCoord < CONFIG.RESIZE_INDENT) {
+      elemAxisSideWithCursor = altDir;
+      if (isMinAxisSizeElem) cursorType = altDir;
       if (!elemAxisCoord) {
-        resizeDirection = isNotMinAxisSizeElem ? 'default' : '';
-      } else {
-        isResizableInBothSides = isNotMinAxisSizeElem;
+        cursorType = isMinAxisSizeElem ? '' : defaultDir;
       }
-    } else if (isInRange(axisMouseCoord, elemAxisSize - 20, elemAxisSize)) {
+    } else if (isInRange(inElemAxisMouseCoord, elemAxisSize - 20, elemAxisSize)) {
       // справа/снизу, направление по ходу оси
-      resizeDirection = 'default';
+      elemAxisSideWithCursor = defaultDir;
+      if (isMinAxisSizeElem) cursorType = defaultDir;
       if ((elemAxisCoord + elemAxisSize) === parentAxisSize) {
-        resizeDirection = isNotMinAxisSizeElem ? 'alt' : '';
-      } else {
-        isResizableInBothSides = isNotMinAxisSizeElem;
+        cursorType = isMinAxisSizeElem ? '' : altDir;
       }
+    } else {
+      cursorType = '';
     }
-    return {
-      resizeDirection: axisCompassDirections[resizeDirection as keyof IAxisDirectionsSettings] || '',
-      isResizableInBothSides
-    };
+    return { elemAxisSideWithCursor, cursorType };
   }
 
-  static getElemResizeDirectionAndCursorType(
+  static getResizedSidesAndCursorType(
     mouseData: ICoords,
     elemData: ICoordsAndSizes,
     parentData: ISizes
-  ): IResizeDirection {
+  ) {
     const { x: mouseX, y: mouseY } = mouseData;
     const { left: elemX, top: elemY, width: elemWidth, height: elemHeight } = elemData;
     const { width: parentWidth, height: parentHeight } = parentData;
     const {
-      resizeDirection: xResizeDirection,
-      isResizableInBothSides: xResizableInBothSides
-    } = MoveResizeService.#getAxisResizeDirectionAndCursorType(
-      mouseX, elemX, elemWidth, parentWidth, { default: 'E', alt: 'W' }, CONFIG.MIN_TILE_SIZES.width
+      elemAxisSideWithCursor: xElemSide,
+      cursorType: xCursor
+    } = MoveResizeService.#getAxisResizedSideAndCursorType(
+      mouseX, elemX, elemWidth, parentWidth, { defaultDir: 'E', altDir: 'W', switchDoubleCursorSides: true }, CONFIG.MIN_TILE_SIZES.width
     );
     const {
-      resizeDirection: yResizeDirection,
-      isResizableInBothSides: yResizableInBothSides
-    } = MoveResizeService.#getAxisResizeDirectionAndCursorType(
-      mouseY, elemY, elemHeight, parentHeight, { default: 'S', alt: 'N' }, CONFIG.MIN_TILE_SIZES.height
+      elemAxisSideWithCursor: yElemSide,
+      cursorType: yCursor
+    } = MoveResizeService.#getAxisResizedSideAndCursorType(
+      mouseY, elemY, elemHeight, parentHeight, { defaultDir: 'S', altDir: 'N' }, CONFIG.MIN_TILE_SIZES.height
     );
-    return {
-      resizeDirection: yResizeDirection + xResizeDirection,
-      isResizableInBothSides: {
-        x: xResizableInBothSides,
-        y: yResizableInBothSides
+    let cursorType = yCursor + xCursor;
+    if (cursorType.length >= 2 && yCursor && xCursor) {
+      const isNESW = xElemSide === 'E' && yElemSide === 'N' || xElemSide === 'W' && yElemSide === 'S';
+      const isNWSE = xElemSide === 'E' && yElemSide === 'S' || xElemSide === 'W' && yElemSide === 'N';
+      if (isNESW || isNWSE) {
+        cursorType = isNESW ? 'NESW' : 'NWSE';
       }
+    }
+    return {
+      resizedSides: {
+        x: xElemSide,
+        y: yElemSide,
+      },
+      cursorType: cursorType || 'default'
     };
   }
 }

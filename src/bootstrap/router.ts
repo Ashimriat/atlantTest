@@ -12,18 +12,31 @@ const routes = [
   {
     path: `/${ROUTES.WORKDESK.path}`,
     name: ROUTES.WORKDESK.path,
-    component: () => {
-      // console.log("STORE STATE", store.state, store);
-      // store.registerModule('workDesk', workDesk);
-      return import(/* webpackChunkName: 'workdesk' */'../components/workDesk/WorkDesk')
+    component: async () => {
+      const { default: workdeskStoreModule } = await import(
+        /* webpackChunkName: 'workdesk'*/
+        './store/modules/workdesk'
+      );
+      store.registerModule(['workDesk'], workdeskStoreModule);
+      return import(
+        /* webpackChunkName: 'workdesk' */
+        '../components/workDesk/WorkDesk'
+      );
     }
   },
   {
     path: `/${ROUTES.TRANSACTIONS.path}`,
     name: ROUTES.TRANSACTIONS.path,
-    component: () => {
-      // store.registerModule('transactions', transactions, { preserveState: true });
-      return import(/* webpackChunkName: 'transactions' */ '../components/transactions/Transactions')
+    component: async () => {
+      const { default: transactionsStoreModule } = await import(
+        /* webpackChunkName: 'transactions'*/
+        './store/modules/transactions'
+      );
+      store.registerModule(['transactions'], transactionsStoreModule);
+      return import(
+        /* webpackChunkName: 'transactions' */
+        '../components/transactions/Transactions'
+      );
     }
   }
 ];

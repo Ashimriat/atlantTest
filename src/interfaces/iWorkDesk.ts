@@ -28,6 +28,7 @@ export interface ITile {
   top: number;
   left: number;
   zIndex: number;
+  order: number;
 }
 export interface IWorkDeskState {
   tiles: ITile[];

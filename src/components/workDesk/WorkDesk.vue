@@ -1,12 +1,19 @@
 <template lang="pug">
-    .WorkDesk(
+  .WorkDesk
+    button.WorkDesk__newTileButton(
+      :class="{ 'WorkDesk__newTileButton--hidden': isMaximumTilesAmount }"
+      @click="generateTile"
+    )
+      | Сгенерировать блок
+    .WorkDesk__desk(
       ref="workdesk"
+      :style="{ width: deskSizes.width + 'px', height: deskSizes.height + 'px' }"
       @mouseup="saveData"
       @mousemove="processMouseMove"
       @mouseleave="saveData"
     )
       Tile(
-        v-for="({ width, height, top, left, zIndex }, index) in tiles"
+        v-for="({ width, height, top, left, zIndex, order }, index) in tiles"
         :key="index"
         :width="index === editedTileIndex ? editedTile.width : width"
         :height="index === editedTileIndex ? editedTile.height : height"
@@ -16,6 +23,7 @@
         :zIndex="index === editedTileIndex ? editedTile.zIndex : zIndex"
         :isEdited="editedTileIndex === index"
         :tileIndex="index"
+        :order="order"
         @editing="setEditedTileData"
         @moving="moveTile"
         @deleting="deleteTile"
@@ -27,8 +35,9 @@ import { Vue, Component, Ref } from "vue-property-decorator";
 import { namespace } from "vuex-class";
 import Tile from "./elements/Tile";
 import { ICoords, ISizes, ICoordsAndSizes, ITile } from "../../interfaces/iWorkDesk";
-import { MUTATIONS } from "../../bootstrap/store/actionsMutations";
-import MoveResizeService from "./moveResizeService";
+import { ACTIONS } from "../../bootstrap/store/actionsMutations";
+import MoveResizeService from "../../services/moveResizeService";
+import CONFIG from '../../config';
 
 
 const workDeskModule = namespace('workDesk');
@@ -39,9 +48,9 @@ const workDeskModule = namespace('workDesk');
 export default class WorkDesk extends Vue {
   @Ref() readonly workdesk!: HTMLElement;
   @workDeskModule.State tiles!: ITile[];
-  @workDeskModule.Mutation(MUTATIONS.WORKDESK.CHANGE_TILE) changeTile!: Function;
-  @workDeskModule.Mutation(MUTATIONS.WORKDESK.REMOVE_TILE) removeTile!: Function;
-  @workDeskModule.Mutation(MUTATIONS.WORKDESK.GENERATE_TILE) generateTile!: Function;
+  @workDeskModule.Action(ACTIONS.WORKDESK.CHANGE_TILE) changeTile!: Function;
+  @workDeskModule.Action(ACTIONS.WORKDESK.REMOVE_TILE) removeTile!: Function;
+  @workDeskModule.Action(ACTIONS.WORKDESK.GENERATE_TILE) generateTile!: Function;
 
   editedTileIndex: number = -1;
   editedTile: null | ITile = null;
@@ -49,7 +58,9 @@ export default class WorkDesk extends Vue {
     moveStartX: 0,
     moveStartY: 0,
     changeWidth: '',
-    changeHeight: ''
+    changeHeight: '',
+    sideX: '',
+    sideY: ''
   };
   isRefMounted: boolean = false;
 
@@ -78,7 +89,7 @@ export default class WorkDesk extends Vue {
     this.resetEditingData();
   }
 
-  setEditedTileData(index: number, moveStartCoords: ICoords, widthChange?: string, heightChange?: string): void {
+  setEditedTileData(index: number, moveStartCoords: ICoords, resizeAllowance: { width: string, height: string, xSide: string, ySide: string }): void {
     this.editedTileIndex = index;
     this.editedTile = {
       ...this.tiles[index],
@@ -87,20 +98,22 @@ export default class WorkDesk extends Vue {
     this.editingData = {
       moveStartX: moveStartCoords.x,
       moveStartY: moveStartCoords.y,
-      changeWidth: widthChange || '',
-      changeHeight: heightChange || ''
+      changeWidth: resizeAllowance?.width || '',
+      changeHeight: resizeAllowance?.height || '',
+      sideX: resizeAllowance?.xSide || '',
+      sideY: resizeAllowance?.ySide || ''
     };
   }
 
   resizeTile({ clientX, clientY }: MouseEvent): void {
-    const { changeWidth, changeHeight } = this.editingData;
+    const { changeWidth, changeHeight, sideX, sideY } = this.editingData;
     const { offsetLeft: deskOffsetLeft, offsetTop: deskOffsetTop } = this.workdesk;
     const {
       newCoords: { x: left, y: top },
       newSizes: { width, height },
       newMoveStartCoords: { x: moveStartX, y: moveStartY }
     } = MoveResizeService.getResizeNewSizesAndCoords(
-      { x: !!changeWidth, y: !!changeHeight, standardX: changeWidth === 'E', standardY: changeHeight === 'S' },
+      { x: !!changeWidth, y: !!changeHeight, farSideX: sideX === 'E', farSideY: sideY === 'S' },
       { width: 300, height: 100 },
       this.editedTile as ICoordsAndSizes,
       { ...this.deskSizes, left: deskOffsetLeft, top: deskOffsetTop },
@@ -137,7 +150,9 @@ export default class WorkDesk extends Vue {
       moveStartX: 0,
       moveStartY: 0,
       changeWidth: '',
-      changeHeight: ''
+      changeHeight: '',
+      sideX: '',
+      sideY: ''
     };
   }
 
@@ -146,11 +161,11 @@ export default class WorkDesk extends Vue {
   }
 
   get deskSizes(): ISizes {
-    if (!this.isRefMounted) {
-      return { width: 0, height: 0 };
-    }
-    const { width, height } = this.workdesk.getBoundingClientRect();
-    return { width, height };
+    return CONFIG.WORKDESK_SIZES
+  }
+
+  get isMaximumTilesAmount(): boolean {
+    return this.tiles.length === CONFIG.MAX_TILES_AMOUNT;
   }
 }
 </script>
@@ -158,9 +173,18 @@ export default class WorkDesk extends Vue {
 <style lang="sass">
   .WorkDesk
     display: flex
-    position: relative
-    box-sizing: border-box
-    max-width: 900px
-    height: 650px
-    border: 1px solid black
+    justify-content: space-evenly
+    align-items: center
+    flex-direction: column
+    &__newTileButton
+      cursor: pointer
+      width: 200px
+      height: 50px
+      &--hidden
+        visibility: hidden
+    &__desk
+      display: flex
+      position: relative
+      box-sizing: border-box
+      border: 1px solid black
 </style>

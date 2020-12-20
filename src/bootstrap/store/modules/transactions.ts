@@ -1,6 +1,6 @@
 import { Commit, Dispatch } from "vuex";
 import { ACTIONS, MUTATIONS } from "../actionsMutations";
-import { ITransactionFullData } from "../../../interfaces";
+import { ITransactionFullData } from "../../../interfaces/iTransactions";
 
 
 const {
@@ -120,7 +120,7 @@ export default {
         }),
         new Promise((_, reject) => {
           setTimeout(() => {
-            reject('Сокет не ответил за заданный промежуток времени')
+            reject('Сокет не ответил за заданный промежуток времени');
           }, 10000);
         })
       ])

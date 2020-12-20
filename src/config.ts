@@ -1,14 +1,16 @@
 export default {
   GRID_SIZE: 10,
   RESIZE_INDENT: 15,
+  MAX_TILES_AMOUNT: 5,
   WORKDESK_SIZES: {
     width: 900,
-    height: 650
+    height: 600
   },
   MIN_TILE_SIZES: {
     width: 300,
     height: 100
   },
+  TILES_STORAGE_KEY: 'appTiles',
   START_TILES: [
     {
       width: 300,
