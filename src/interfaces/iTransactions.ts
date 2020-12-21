@@ -1,3 +1,5 @@
+import {Commit, Dispatch} from "vuex";
+
 interface IOperationData {
   spent: boolean;
   tx_index: number;
@@ -31,3 +33,20 @@ export interface ITransactionFullData {
 
 export type ITransactionPanelOperations = 'connect' | 'disconnect' | 'reset';
 
+export interface ITransactionData {
+  from: string;
+  to: string;
+  amount: number;
+}
+export interface ITransactionsState {
+  socket: null | WebSocket;
+  isSocketInitialized: boolean;
+  isSocketActive: boolean;
+  error: string;
+  transactionsData: ITransactionData[]
+}
+export interface ITransactionsActionContext {
+  state: ITransactionsState;
+  commit: Commit;
+  dispatch: Dispatch;
+}

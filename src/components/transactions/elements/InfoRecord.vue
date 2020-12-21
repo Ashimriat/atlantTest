@@ -11,13 +11,14 @@
 <script lang="ts">
 import "reflect-metadata";
 import { Vue, Component, Prop } from "vue-property-decorator";
+import { ITransactionData } from "../../../interfaces/iTransactions";
 
 
 @Component
 export default class InfoRecord extends Vue {
-  @Prop() readonly from!: string;
-  @Prop() readonly to!: string;
-  @Prop() readonly amount!: number;
+  @Prop() readonly from!: ITransactionData['from'];
+  @Prop() readonly to!: ITransactionData['to'];
+  @Prop() readonly amount!: ITransactionData['amount'];
 }
 </script>
 

@@ -42,8 +42,7 @@ import "reflect-metadata";
 import { Vue, Component } from "vue-property-decorator";
 import { namespace } from "vuex-class";
 import { ACTIONS, MUTATIONS } from "../../bootstrap/store/actionsMutations";
-import { ITransactionPanelOperations } from "../../interfaces/iTransactions";
-import { ITransactionsState } from "../../bootstrap/store/modules/transactions";
+import { ITransactionPanelOperations, ITransactionsState} from "../../interfaces/iTransactions";
 import InfoRecord from "./elements/InfoRecord";
 
 

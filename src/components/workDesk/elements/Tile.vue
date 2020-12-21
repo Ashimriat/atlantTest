@@ -14,8 +14,7 @@
 import { Vue, Component, Prop, Ref } from 'vue-property-decorator';
 import MoveResizeService from "../../../services/moveResizeService";
 import {
-  ICoords, ISizes, IResizeElemCoordsStyles, ITileStyles,
-  ITileCursorType, IAxisDirections
+  ICoords, ISizes, IResizeElemCoordsStyles, ITileStyles, IResizeAllowances
 } from "../../../interfaces/iWorkDesk";
 
 
@@ -37,7 +36,7 @@ export default class Tile extends Vue {
   cursorType = 'default';
 
   processMouseDown({ clientX, clientY }: MouseEvent): void {
-    const args: [number, ICoords] = [this.tileIndex, { x: clientX, y: clientY }];
+    const args: [number, ICoords, IResizeAllowances?] = [this.tileIndex, { x: clientX, y: clientY }];
     if (this.cursorType !== 'default') {
       const horizontalMatch = this.cursorType.match(/[WE]/);
       const verticalMatch = this.cursorType.match(/[NS]/);

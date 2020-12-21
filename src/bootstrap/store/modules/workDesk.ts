@@ -1,20 +1,13 @@
 import { ACTIONS, MUTATIONS } from "../actionsMutations";
 import CONFIG from "../../../config";
-import {IWorkDeskState, IChangeTileMutationData, ITile} from "../../../interfaces/iWorkDesk";
-import {Commit, Dispatch} from "vuex";
-import {ITransactionsState} from "./transactions";
+import {
+  IWorkDeskState, IChangeTileMutationData,
+  ITile, IWorkdeskActionContext
+} from "../../../interfaces/iWorkDesk";
 
 
 const { UPDATE_TILE, CREATE_TILE, DELETE_TILE } = MUTATIONS.WORKDESK;
 const { CHANGE_TILE, GENERATE_TILE, REMOVE_TILE, SAVE_TO_STORAGE } = ACTIONS.WORKDESK;
-
-interface IActionContext {
-  state: IWorkDeskState;
-  commit: Commit;
-  dispatch: Dispatch;
-  payload?: any;
-}
-
 
 export default {
   namespaced: true,
@@ -83,19 +76,19 @@ export default {
     }
   },
   actions: {
-    [GENERATE_TILE]({ commit, dispatch }: IActionContext): void {
+    [GENERATE_TILE]({ commit, dispatch }: IWorkdeskActionContext): void {
       commit(CREATE_TILE);
       dispatch(SAVE_TO_STORAGE);
     },
-    [CHANGE_TILE]({ commit, dispatch }: IActionContext, payload: Partial<ITile>) {
+    [CHANGE_TILE]({ commit, dispatch }: IWorkdeskActionContext, payload: Partial<ITile>): void {
       commit(UPDATE_TILE, payload);
       dispatch(SAVE_TO_STORAGE);
     },
-    [REMOVE_TILE]({ commit, dispatch }: IActionContext, payload: number) {
+    [REMOVE_TILE]({ commit, dispatch }: IWorkdeskActionContext, payload: number): void {
       commit(DELETE_TILE, payload);
       dispatch(SAVE_TO_STORAGE);
     },
-    [SAVE_TO_STORAGE]({ state }: IActionContext) {
+    [SAVE_TO_STORAGE]({ state }: IWorkdeskActionContext): void {
       localStorage.setItem(CONFIG.TILES_STORAGE_KEY, JSON.stringify(state.tiles));
     }
   },

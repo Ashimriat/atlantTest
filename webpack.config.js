@@ -6,6 +6,9 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = (env, args) => {
 	const IS_DEV = args.mode === 'development';
+	const commonModules = ['config', 'constants', 'utils', 'bootstrap/store/actionsMutations'].map(modulePath => (
+		path.resolve(__dirname, `src/${modulePath}`)
+	));
 	
 	const config = {
 		mode: args.mode,
@@ -14,10 +17,7 @@ module.exports = (env, args) => {
 				import: path.resolve(__dirname, 'src/bootstrap'),
 				dependOn: 'common'
 			},
-			common: [
-				path.resolve(__dirname, 'src/config'), path.resolve(__dirname, 'src/constants'),
-				path.resolve(__dirname, 'src/utils'), path.resolve(__dirname, 'src/bootstrap/store/actionsMutations'),
-			]
+			common: commonModules
 		},
 		optimization: {
 			minimize: !IS_DEV,

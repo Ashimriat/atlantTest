@@ -19,12 +19,8 @@ import { ROUTES } from "../constants";
 
 @Component
 export default class App extends Vue {
-  mounted(): void {
-    window.VUE = this.$root;
-  }
-
   get routes() {
-    return Object.keys(ROUTES).map(key => ROUTES[key]);
+    return Object.keys(ROUTES).map(key => ROUTES[key as keyof typeof ROUTES]);
   }
 }
 </script>

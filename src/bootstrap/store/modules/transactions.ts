@@ -1,6 +1,9 @@
-import { Commit, Dispatch } from "vuex";
 import { ACTIONS, MUTATIONS } from "../actionsMutations";
-import { ITransactionFullData } from "../../../interfaces/iTransactions";
+import { processTransactionData } from "../../../utils";
+import {
+  ITransactionFullData, ITransactionsActionContext, ITransactionsState
+} from "../../../interfaces/iTransactions";
+import { MESSAGE_OBJS, SUCCESS_PING_ANSWER, TRANSACTIONS_API_SOCKET } from "../../../constants";
 
 
 const {
@@ -10,34 +13,6 @@ const {
   MARK_SOCKET_INITIALIZED, SET_SOCKET_ERROR, UPDATE_LIST,
   RESET_LIST, CREATE_SOCKET, TOGGLE_CONNECT_STATUS
 } = MUTATIONS.TRANSACTIONS;
-
-const TRANSACTIONS_API_SOCKET = 'wss://ws.blockchain.info/inv';
-const MESSAGE_OBJS = {
-  ping: { op: 'ping' },
-  subscribe: { op: 'unconfirmed_sub' },
-  unsubscribe: { op: 'unconfirmed_unsub' }
-};
-const SUCCESS_PING_ANSWER = 'pong';
-
-interface ITransactionData {
-  from: string;
-  to: string;
-  amount: number;
-}
-
-export interface ITransactionsState {
-  socket: null | WebSocket;
-  isSocketInitialized: boolean;
-  isSocketActive: boolean;
-  error: string;
-  transactionsData: ITransactionData[]
-}
-
-interface IActionContext {
-  state: ITransactionsState;
-  commit: Commit;
-  dispatch: Dispatch;
-}
 
 export default {
   namespaced: true,
@@ -60,8 +35,7 @@ export default {
       state.isSocketActive = !state.isSocketActive;
     },
     [UPDATE_LIST](state: ITransactionsState, value: ITransactionFullData) {
-      console.log(value);
-      state.transactionsData.push({ from: 'asdasdasd', to: 'dasasdasas', amount: 600 });
+      state.transactionsData.push(processTransactionData(value));
     },
     [RESET_LIST](state: ITransactionsState) {
       state.transactionsData = [];
@@ -71,7 +45,7 @@ export default {
     },
   },
   actions: {
-    async [INIT_SOCKET]({ state, commit, dispatch }: IActionContext): Promise<void> {
+    async [INIT_SOCKET]({ state, commit, dispatch }: ITransactionsActionContext): Promise<void> {
       if (!state.isSocketInitialized || (state.socket as WebSocket).readyState !== 3) {
         try {
           if (!state.isSocketInitialized) commit(CREATE_SOCKET);
@@ -88,7 +62,7 @@ export default {
         dispatch(CONNECT_TO_SOCKET);
       }
     },
-    [CHECK_SOCKET]({ state, commit }: IActionContext): Promise<unknown> {
+    [CHECK_SOCKET]({ state, commit }: ITransactionsActionContext): Promise<unknown> {
       const socket = state.socket as WebSocket;
       return Promise.race([
         new Promise<void>(async (resolve, reject) => {
@@ -125,11 +99,11 @@ export default {
         })
       ])
     },
-    [CONNECT_TO_SOCKET]({ state: { socket }, commit }: IActionContext): void {
+    [CONNECT_TO_SOCKET]({ state: { socket }, commit }: ITransactionsActionContext): void {
       (socket as WebSocket).send(JSON.stringify(MESSAGE_OBJS.subscribe));
       commit(TOGGLE_CONNECT_STATUS);
     },
-    [DISCONNECT_FROM_SOCKET]({  state: { socket }, commit }: IActionContext): void {
+    [DISCONNECT_FROM_SOCKET]({  state: { socket }, commit }: ITransactionsActionContext): void {
       (socket as WebSocket).send(JSON.stringify(MESSAGE_OBJS.unsubscribe));
       commit(TOGGLE_CONNECT_STATUS);
     }

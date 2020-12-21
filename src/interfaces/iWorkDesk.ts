@@ -1,8 +1,16 @@
+import { Commit, Dispatch } from "vuex";
+
+
 type IAxisDirectionsX = 'left' | 'right';
 type IAxisDirectionsY = 'top' | 'bottom';
-type ICompassAxisesDirections = 'N' | 'S' | 'W' | 'E';
+type ICompassDirectionsAxisX = 'W' | 'E';
+type ICompassDirectionsAxisY = 'N' | 'S';
+type ICompassAxisesDirections = ICompassDirectionsAxisX | ICompassDirectionsAxisY;
 type ICompassAxisesHybridDirections = 'NW' | 'NE' | 'SW' | 'SE';
+type ICompassDoubleSideAxisDirections = 'WE' | 'EW' | 'NS' | 'SN';
+type ICompassAllSidesDirection = 'NESW' | 'NWSE';
 type ICompassDirections = ICompassAxisesDirections | ICompassAxisesHybridDirections;
+type ICursorType = ICompassAllSidesDirection | ICompassDoubleSideAxisDirections | IAxisCompassDirection | 'default';
 export type IAxisDirections = IAxisDirectionsX | IAxisDirectionsY;
 export type IAxisCompassDirection = ICompassAxisesDirections | string;
 export type ITileCursorType = ICompassDirections | 'default';
@@ -43,14 +51,15 @@ export interface ITileStyles extends IResizeElemCoordsStyles {
   zIndex: ITile['zIndex']
 }
 export interface IAxisDirectionsSettings {
-  default: ICompassAxisesDirections;
-  alt: ICompassAxisesDirections;
+  defaultDir: ICompassAxisesDirections;
+  altDir: ICompassAxisesDirections;
+  switchDoubleCursorSides?: boolean;
 }
 export interface IAxisesResizeData {
   x: boolean;
   y: boolean;
-  standardX: boolean;
-  standardY: boolean
+  farSideX: boolean;
+  farSideY: boolean
 }
 export interface IAxisMoveData {
   newAxisCoord: number;
@@ -69,4 +78,27 @@ export interface IResizeData {
   newSizes: ISizes
   newCoords: ICoords,
   newMoveStartCoords: ICoords;
+}
+export interface IWorkdeskActionContext {
+  state: IWorkDeskState;
+  commit: Commit;
+  dispatch: Dispatch;
+  payload?: any;
+}
+export interface IAxisResizeSideAndCursor {
+  elemAxisSideWithCursor: ICompassAxisesDirections | string;
+  cursorType: ICompassDoubleSideAxisDirections | IAxisCompassDirection;
+}
+export interface IResizeSideAndCursor {
+  resizedSides: {
+    x: ICompassAxisesDirections | string;
+    y: ICompassAxisesDirections | string;
+  };
+  cursorType: ICursorType;
+}
+export interface IResizeAllowances {
+  width: ICompassDirectionsAxisX | string;
+  height: ICompassDirectionsAxisY | string;
+  xSide: ICompassDirectionsAxisY | string;
+  ySide: ICompassDirectionsAxisY | string;
 }

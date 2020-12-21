@@ -4,7 +4,7 @@ import {
   IAxisMoveData, IMoveData, IAxisResizeData, IResizeData,
   IResizeElemCoordsStyles, IAxisCompassDirection, IResizeDirection,
   ICoords, ISizes, ICoordsAndSizes, IAxisesResizeData, IAxisDirections,
-  IAxisDirectionsSettings
+  IAxisDirectionsSettings, IAxisResizeSideAndCursor, IResizeSideAndCursor
 } from "../interfaces/iWorkDesk";
 
 
@@ -191,7 +191,7 @@ export default class MoveResizeService {
     parentAxisSize: number,
     axisDirectionsSettings: IAxisDirectionsSettings,
     elemMinAxisSize: number
-  ): IAxisCompassDirection {
+  ): IAxisResizeSideAndCursor {
     const { defaultDir, altDir, switchDoubleCursorSides } = axisDirectionsSettings;
     let elemAxisSideWithCursor: string = '',
         cursorType: string = switchDoubleCursorSides ? defaultDir + altDir : altDir + defaultDir;
@@ -219,7 +219,7 @@ export default class MoveResizeService {
     mouseData: ICoords,
     elemData: ICoordsAndSizes,
     parentData: ISizes
-  ) {
+  ): IResizeSideAndCursor {
     const { x: mouseX, y: mouseY } = mouseData;
     const { left: elemX, top: elemY, width: elemWidth, height: elemHeight } = elemData;
     const { width: parentWidth, height: parentHeight } = parentData;

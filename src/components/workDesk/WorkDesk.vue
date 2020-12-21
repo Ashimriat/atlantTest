@@ -34,7 +34,10 @@
 import { Vue, Component, Ref } from "vue-property-decorator";
 import { namespace } from "vuex-class";
 import Tile from "./elements/Tile";
-import { ICoords, ISizes, ICoordsAndSizes, ITile } from "../../interfaces/iWorkDesk";
+import {
+  ICoords, ISizes, ICoordsAndSizes,
+  ITile, IResizeAllowances
+} from "../../interfaces/iWorkDesk";
 import { ACTIONS } from "../../bootstrap/store/actionsMutations";
 import MoveResizeService from "../../services/moveResizeService";
 import CONFIG from '../../config';
@@ -89,7 +92,7 @@ export default class WorkDesk extends Vue {
     this.resetEditingData();
   }
 
-  setEditedTileData(index: number, moveStartCoords: ICoords, resizeAllowance: { width: string, height: string, xSide: string, ySide: string }): void {
+  setEditedTileData(index: number, moveStartCoords: ICoords, resizeAllowance: IResizeAllowances): void {
     this.editedTileIndex = index;
     this.editedTile = {
       ...this.tiles[index],
